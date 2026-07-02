@@ -194,7 +194,7 @@ vars_md<-c("scd_status","ED_UDR04_COM","sex","AGE_NMBR_COF1",
                   "DEP_CESD10_COF1","testing_lang")
 
 # use check_multivariate_outliers() fuction with alpha = .001
-md_results<-check_multivariate_outliers(data4, vars_md,.001)
+md_results<-check_multivariate_outliers(data4, vars_md)
 md_results$summary
 
 #new dataset without outliers
@@ -203,4 +203,7 @@ data5 <- data4[md_results$mahalanobis_distances < md_results$cutoff, ]
 
 #### MEAN IMPUTATION OF CESD-10 VAR ####
 data6<-impute_by_group(data5, "scd_status","DEP_CESD10_COF1")
+
+# write out clean dataest
+write.csv(data6,"data_clean.csv",row.names=FALSE)
 
