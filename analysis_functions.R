@@ -17,12 +17,12 @@ replace_missing <- function(df,vars,codes) {
 #' Detect mutlivariate outliers 
 #' @param df dataframe 
 #' @param vars character vector with variables to check
-#' @param alpha specified alpha level for chi square cutoff 
+#' @param alpha specified alpha level for chi square cutoff. default is .001
 #' 
 #' @return mahalanobis distance values plotted against chi square quantiles
 #' "summary" returns logical value for outliers (outliers = TRUE)
 #'  
-check_multivariate_outliers <- function(data, vars, alpha) {
+check_multivariate_outliers <- function(data, vars, alpha=.001) {
   
   library(dplyr)
   library(modi)
@@ -83,7 +83,6 @@ check_multivariate_outliers <- function(data, vars, alpha) {
 #' mean of the observed values within each level of a grouping variable.
 #'
 #' @param data A data frame containing the variables to be imputed.
-#' @param new_df New dataframe after imputation.
 #' @param group_var A character string specifying the grouping variable, or a
 #'   character vector of grouping variables.
 #' @param vars A character vector of the numeric variable(s) to impute.
@@ -92,15 +91,15 @@ check_multivariate_outliers <- function(data, vars, alpha) {
 #'   by the group-specific mean.
 #'
 #' @details
-#' Missing values are imputed separately within each group defined by
-#' `group_var`. The mean is calculated using all non-missing values
-#' (`na.rm = TRUE`).
+#' Missing values are imputed separately within each group and
+#'  mean is calculated using all non-missing values.
 
-impute_by_group <- function(data, new_df,group_var, vars) {
+
+impute_by_group <- function(data,group_var, vars) {
   
   library(dplyr)
   
-  data<-data %>%
+  data %>%
     group_by(across(all_of(group_var))) %>%
     mutate(across(
       all_of(vars),
@@ -148,6 +147,42 @@ data_visualization_pdf<-function(data,plot_outcomes,group_var,pdf_file_name){
   }
   dev.off()
 }
+
+
+
+#' Remove Univariate Outliers Within Groups
+#'
+#' Removes observations with extreme standardized (z-score) values within
+#' groups. For each specified variable, z-scores are calculated separately
+#' within each group defined by `group_var`. Observations are removed if the
+#' absolute z-score exceeds the specified threshold for any of the variables.
+#'
+#' @param data A data frame
+#' @param group_var A character string specifying the grouping variable
+#' @param vars A character vector of numeric variables to screen for outliers.
+#' @param z_cutoff A numeric value specifying the absolute z-score threshold for
+#'   identifying outliers. Defaults to 3.
+#'
+#' @return new data frame with observations containing outliers removed.
+
+remove_group_outliers <- function(data, group_var, vars, z_cutoff = 3) {
+  
+  library(dplyr)
+  
+  data %>%
+    group_by(across(all_of(group_var))) %>%
+    filter(!if_any(all_of(vars),
+                   ~{z <- (.x - mean(.x, na.rm = TRUE)) / sd(.x, na.rm = TRUE)
+                   !is.na(z) & abs(z) > z_cutoff
+                   }
+                   )
+           ) %>%
+    ungroup()
+}
+
+
+
+
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #### MODEL DIAGNOSTICS FUNCTIONS ####

@@ -179,18 +179,11 @@ describe(data3[, plot_outcomes])
 
 
 ##### univariate outliers ####
-outliers<-c("COG_REYII_SCORE_COF1", "COG_REYI_SCORE_COF1")
+outlier_vars<-c("COG_REYII_SCORE_COF1", "COG_REYI_SCORE_COF1")
 
 # exclude when z score is >= abs(3)
-data4<-data3 %>%
-  group_by(scd_status)%>%
-  filter(
-    !if_any(all_of(outliers),~{
-      z<-(.x - mean(.x, na.rm = TRUE))/sd(.x, na.rm = TRUE)
-      !is.na(z)&abs(z)>3
-    })
-  ) %>%
-  ungroup()
+#use remove_group_outliers() 
+data4<-remove_group_outliers(data3, "scd_status", outlier_vars)
 
 
 ##### multivariate outliers ####
@@ -209,5 +202,5 @@ data5 <- data4[md_results$mahalanobis_distances < md_results$cutoff, ]
 
 
 #### MEAN IMPUTATION OF CESD-10 VAR ####
-impute_by_group(data5, data6, "scd_status","DEP_CESD10_COF1")
+data6<-impute_by_group(data5, "scd_status","DEP_CESD10_COF1")
 
