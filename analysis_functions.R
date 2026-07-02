@@ -182,8 +182,6 @@ remove_group_outliers <- function(data, group_var, vars, z_cutoff = 3) {
 
 
 
-
-
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #### MODEL DIAGNOSTICS FUNCTIONS ####
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -265,7 +263,7 @@ regression_diagnostics<-function(data,outcome_vars,group_var,covariates){
 #' @param data Data frame
 #' @param outcome_vars Character vector of outcomes
 #' @param group_var Grouping variable (fixed effect)
-#' @param covariates String of covariate terms
+#' @param covariates String of covariate terms, separated by "+"
 #' @param id_var Subject ID variable for random intercept
 #' 
 #' @return PDF file containing diagnostic plots 
@@ -318,7 +316,7 @@ mem_diagnostics<-function(data, outcome_vars, group_var, covariates, id_var){
 #' @param data data frame
 #' @param outcome_vars character vector of outcomes
 #' @param group_var group predictor variable
-#' @param covariates string of covariate formula terms
+#' @param covariates String of covariate terms, separated by "+"
 #' 
 #' @return List containing:
 #' coef: tidy regression coefficients with CIs
@@ -358,7 +356,7 @@ fit_unstd_model<-function(data,outcome_vars,group_var,covariates){
 #' @param data data frame
 #' @param outcome_vars character vector of outcomes
 #' @param group_var group predictor variable
-#' @param covariates string of covariate formula terms
+#' @param covariates String of covariate terms, separated by "+"
 #' 
 #' @return standardized beta coefficients and confidence intervals only
 
@@ -402,7 +400,7 @@ fit_std_model<-function(data,outcome_vars,group_var,covariates){
 #' @param data Data frame containing all variables used in the model
 #' @param outcome_vars Character vector of outcome variable names
 #' @param group_var Name of grouping variable (string)
-#' @param covariates String of covariate terms (e.g., "age + sex + bmi")
+#' @param covariates String of covariate terms, separated by "+" 
 #' @param id_var Name of subject identifier variable for random intercept
 #'
 #' @return A list with:
@@ -443,7 +441,7 @@ fit_unstd_long_model<-function(data, outcome_vars, group_var, covariates, id_var
 #' @param data Data frame containing standardized outcomes
 #' @param outcome_vars Character vector of standardized outcome variable names
 #' @param group_var Name of grouping variable (string)
-#' @param covariates String of covariate terms
+#' @param covariates String of covariate terms, separated by "+"
 #' @param id_var Subject identifier variable for random intercept
 #'
 #' @return tibble containing:
