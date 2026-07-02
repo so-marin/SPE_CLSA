@@ -1,7 +1,9 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #### DATA CLEANING FUNCTIONS ####
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#' function to replace missing values
+
+
+#' Replace missing values
 #' @param df dataframe 
 #' @param vars character vector with variables to recode
 #' @param codes numerical vector with missing code values
@@ -11,6 +13,100 @@ replace_missing <- function(df,vars,codes) {
   df %>%
     mutate(across(all_of(vars),~replace(.x,.x %in% codes,NA_real_)))}
 
+
+#' Detect mutlivariate outliers 
+#' @param df dataframe 
+#' @param vars character vector with variables to check
+#' @param alpha specified alpha level for chi square cutoff. default is .001
+#' 
+#' @return mahalanobis distance values plotted against chi square quantiles
+#' "summary" returns logical value for outliers (outliers = TRUE)
+#'  
+check_multivariate_outliers <- function(data, vars, alpha=.001) {
+  
+  library(dplyr)
+  library(modi)
+  
+  # Subset data
+  data_md <- data[, vars]
+  
+  # Convert factor variables to numeric
+  data_md <- data_md %>%
+    mutate(across(where(is.factor), as.numeric))
+  
+  # Calculate Mahalanobis distances
+  center_val <- colMeans(data_md, na.rm = TRUE)
+  cov_mat <- cov(data_md, use = "pairwise.complete.obs")
+  
+  mahalanobis_distances<-MDmiss(data_md,center=center_val,cov=cov_mat)
+  
+  # Generate chi-square quantiles
+  chi_square_quantiles <- qchisq((1:nrow(data_md))/(nrow(data_md)+1),
+    df=ncol(data_md)
+  )
+  
+  # Sort distances for Q-Q plot
+  sorted_mahal_distances <- sort(mahalanobis_distances)
+  
+  # Plot
+  plot(
+    chi_square_quantiles,
+    sorted_mahal_distances,
+    main = "Mahalanobis Distance vs. Chi-Square Quantiles",
+    xlab = "Chi-square Quantiles",
+    ylab = "Mahalanobis Distance",
+    pch = 19,
+    col = "blue"
+  )
+  abline(0, 1, col = "red", lwd = 2)
+  
+  # Cutoff
+  cutoff <- qchisq(1 - alpha, df = ncol(data_md))
+  
+  # Outlier summary
+  outliers <- mahalanobis_distances > cutoff
+  
+  return(list(
+    data = data_md,
+    mahalanobis_distances = mahalanobis_distances,
+    cutoff = cutoff,
+    outliers = outliers,
+    outlier_indices = which(outliers),
+    summary = table(Outlier = outliers)
+  ))
+}
+
+
+#' Impute Missing Values Using Group Means
+#'
+#' Replaces missing values in one or more numeric variables with the
+#' mean of the observed values within each level of a grouping variable.
+#'
+#' @param data A data frame containing the variables to be imputed.
+#' @param group_var A character string specifying the grouping variable, or a
+#'   character vector of grouping variables.
+#' @param vars A character vector of the numeric variable(s) to impute.
+#'
+#' @return A data frame with missing values in the specified variables replaced
+#'   by the group-specific mean.
+#'
+#' @details
+#' Missing values are imputed separately within each group and
+#'  mean is calculated using all non-missing values.
+
+
+impute_by_group <- function(data,group_var, vars) {
+  
+  library(dplyr)
+  
+  data %>%
+    group_by(across(all_of(group_var))) %>%
+    mutate(across(
+      all_of(vars),
+      ~ ifelse(is.na(.), mean(., na.rm = TRUE), .)
+    )) %>%
+    ungroup()
+}
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #### DATA VISUALIZATION FUNCTIONS ####
@@ -51,6 +147,40 @@ data_visualization_pdf<-function(data,plot_outcomes,group_var,pdf_file_name){
   }
   dev.off()
 }
+
+
+
+#' Remove Univariate Outliers Within Groups
+#'
+#' Removes observations with extreme standardized (z-score) values within
+#' groups. For each specified variable, z-scores are calculated separately
+#' within each group defined by `group_var`. Observations are removed if the
+#' absolute z-score exceeds the specified threshold for any of the variables.
+#'
+#' @param data A data frame
+#' @param group_var A character string specifying the grouping variable
+#' @param vars A character vector of numeric variables to screen for outliers.
+#' @param z_cutoff A numeric value specifying the absolute z-score threshold for
+#'   identifying outliers. Defaults to 3.
+#'
+#' @return new data frame with observations containing outliers removed.
+
+remove_group_outliers <- function(data, group_var, vars, z_cutoff = 3) {
+  
+  library(dplyr)
+  
+  data %>%
+    group_by(across(all_of(group_var))) %>%
+    filter(!if_any(all_of(vars),
+                   ~{z <- (.x - mean(.x, na.rm = TRUE)) / sd(.x, na.rm = TRUE)
+                   !is.na(z) & abs(z) > z_cutoff
+                   }
+                   )
+           ) %>%
+    ungroup()
+}
+
+
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #### MODEL DIAGNOSTICS FUNCTIONS ####
@@ -133,7 +263,7 @@ regression_diagnostics<-function(data,outcome_vars,group_var,covariates){
 #' @param data Data frame
 #' @param outcome_vars Character vector of outcomes
 #' @param group_var Grouping variable (fixed effect)
-#' @param covariates String of covariate terms
+#' @param covariates String of covariate terms, separated by "+"
 #' @param id_var Subject ID variable for random intercept
 #' 
 #' @return PDF file containing diagnostic plots 
@@ -186,7 +316,7 @@ mem_diagnostics<-function(data, outcome_vars, group_var, covariates, id_var){
 #' @param data data frame
 #' @param outcome_vars character vector of outcomes
 #' @param group_var group predictor variable
-#' @param covariates string of covariate formula terms
+#' @param covariates String of covariate terms, separated by "+"
 #' 
 #' @return List containing:
 #' coef: tidy regression coefficients with CIs
@@ -226,7 +356,7 @@ fit_unstd_model<-function(data,outcome_vars,group_var,covariates){
 #' @param data data frame
 #' @param outcome_vars character vector of outcomes
 #' @param group_var group predictor variable
-#' @param covariates string of covariate formula terms
+#' @param covariates String of covariate terms, separated by "+"
 #' 
 #' @return standardized beta coefficients and confidence intervals only
 
@@ -270,7 +400,7 @@ fit_std_model<-function(data,outcome_vars,group_var,covariates){
 #' @param data Data frame containing all variables used in the model
 #' @param outcome_vars Character vector of outcome variable names
 #' @param group_var Name of grouping variable (string)
-#' @param covariates String of covariate terms (e.g., "age + sex + bmi")
+#' @param covariates String of covariate terms, separated by "+" 
 #' @param id_var Name of subject identifier variable for random intercept
 #'
 #' @return A list with:
@@ -311,7 +441,7 @@ fit_unstd_long_model<-function(data, outcome_vars, group_var, covariates, id_var
 #' @param data Data frame containing standardized outcomes
 #' @param outcome_vars Character vector of standardized outcome variable names
 #' @param group_var Name of grouping variable (string)
-#' @param covariates String of covariate terms
+#' @param covariates String of covariate terms, separated by "+"
 #' @param id_var Subject identifier variable for random intercept
 #'
 #' @return tibble containing:
