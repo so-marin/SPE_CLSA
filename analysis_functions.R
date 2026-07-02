@@ -1,7 +1,9 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #### DATA CLEANING FUNCTIONS ####
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#' function to replace missing values
+
+
+#' Replace missing values
 #' @param df dataframe 
 #' @param vars character vector with variables to recode
 #' @param codes numerical vector with missing code values
@@ -11,6 +13,101 @@ replace_missing <- function(df,vars,codes) {
   df %>%
     mutate(across(all_of(vars),~replace(.x,.x %in% codes,NA_real_)))}
 
+
+#' Detect mutlivariate outliers 
+#' @param df dataframe 
+#' @param vars character vector with variables to check
+#' @param alpha specified alpha level for chi square cutoff 
+#' 
+#' @return mahalanobis distance values plotted against chi square quantiles
+#' "summary" returns logical value for outliers (outliers = TRUE)
+#'  
+check_multivariate_outliers <- function(data, vars, alpha) {
+  
+  library(dplyr)
+  library(modi)
+  
+  # Subset data
+  data_md <- data[, vars]
+  
+  # Convert factor variables to numeric
+  data_md <- data_md %>%
+    mutate(across(where(is.factor), as.numeric))
+  
+  # Calculate Mahalanobis distances
+  center_val <- colMeans(data_md, na.rm = TRUE)
+  cov_mat <- cov(data_md, use = "pairwise.complete.obs")
+  
+  mahalanobis_distances<-MDmiss(data_md,center=center_val,cov=cov_mat)
+  
+  # Generate chi-square quantiles
+  chi_square_quantiles <- qchisq((1:nrow(data_md))/(nrow(data_md)+1),
+    df=ncol(data_md)
+  )
+  
+  # Sort distances for Q-Q plot
+  sorted_mahal_distances <- sort(mahalanobis_distances)
+  
+  # Plot
+  plot(
+    chi_square_quantiles,
+    sorted_mahal_distances,
+    main = "Mahalanobis Distance vs. Chi-Square Quantiles",
+    xlab = "Chi-square Quantiles",
+    ylab = "Mahalanobis Distance",
+    pch = 19,
+    col = "blue"
+  )
+  abline(0, 1, col = "red", lwd = 2)
+  
+  # Cutoff
+  cutoff <- qchisq(1 - alpha, df = ncol(data_md))
+  
+  # Outlier summary
+  outliers <- mahalanobis_distances > cutoff
+  
+  return(list(
+    data = data_md,
+    mahalanobis_distances = mahalanobis_distances,
+    cutoff = cutoff,
+    outliers = outliers,
+    outlier_indices = which(outliers),
+    summary = table(Outlier = outliers)
+  ))
+}
+
+
+#' Impute Missing Values Using Group Means
+#'
+#' Replaces missing values in one or more numeric variables with the
+#' mean of the observed values within each level of a grouping variable.
+#'
+#' @param data A data frame containing the variables to be imputed.
+#' @param new_df New dataframe after imputation.
+#' @param group_var A character string specifying the grouping variable, or a
+#'   character vector of grouping variables.
+#' @param vars A character vector of the numeric variable(s) to impute.
+#'
+#' @return A data frame with missing values in the specified variables replaced
+#'   by the group-specific mean.
+#'
+#' @details
+#' Missing values are imputed separately within each group defined by
+#' `group_var`. The mean is calculated using all non-missing values
+#' (`na.rm = TRUE`).
+
+impute_by_group <- function(data, new_df,group_var, vars) {
+  
+  library(dplyr)
+  
+  data<-data %>%
+    group_by(across(all_of(group_var))) %>%
+    mutate(across(
+      all_of(vars),
+      ~ ifelse(is.na(.), mean(., na.rm = TRUE), .)
+    )) %>%
+    ungroup()
+}
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #### DATA VISUALIZATION FUNCTIONS ####

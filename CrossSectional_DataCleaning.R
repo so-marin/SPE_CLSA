@@ -6,8 +6,7 @@ library(ggpubr)
 library(psych)
 library(modi)
 
-#have wd set 
-set_wd()
+
 source("analysis.functions.R")
 
 data<-read_csv("scd_spe_merged.csv")
@@ -74,16 +73,7 @@ missing_dems<-c(8,9,-88888,-99999)
 missing_vars<-c("COG_REYI_SCORE_COF1","COG_REYII_SCORE_COF1","DEP_CESD10_COF1")
 missing_vars_dems<-c("INC_TOT_COF1","COG_REYI_STARTLANG_COF1","SDC_CULT_WH_COM")
 
-#' function to replace missing values
-#' @param df dataframe 
-#' @param vars character vector with variables to recode
-#' @param codes numerical vector with missing code values
-#' 
-#' @return recoded variables
-replace_missing <- function(df,vars,codes) {
-  df %>%
-    mutate(across(all_of(vars),~replace(.x,.x %in% codes,NA_real_)))}
-
+# use replace_missing() function
 data2<-replace_missing(data1,missing_vars,missing_codes)
 data2<-replace_missing(data2,missing_vars_dems,missing_dems)
 
@@ -106,15 +96,17 @@ data2<-data2%>%
   )
 
 # Fit logistic regression
-model<-glm(ravlt_missing ~ scd_status+sex+AGE_NMBR_COF1+ED_UDR04_COM+
+missing_model<-glm(ravlt_missing ~ scd_status+sex+AGE_NMBR_COF1+ED_UDR04_COM+
              testing_lang+DEP_CESD10_COF1, 
              data = data2, 
              family = binomial)
 
 # View summary
-summary(model)
-exp(coef(model))
-exp(confint(model))
+summary(missing_model)
+exp(coef(missing_model))
+exp(confint(missing_model))
+
+capture.output(summary(missing_model), file = "logistic_regression_output.txt")
 
 ##### exclude people with no RAVLT data ####
 data3<- data2 %>%
@@ -172,16 +164,14 @@ data3 <- data3 %>%
 #~~~~~~~~~~~~~~~~#
 
 ##### data visualization ####
+# use the data_visualization_pdf() function
 plot_outcomes<-c("COG_REYII_SCORE_COF1", "COG_REYI_SCORE_COF1",
                  "primacy1_SPE","primacy2_SPE","middle1_SPE","middle2_SPE",
                  "recency1_SPE","recency2_SPE","primacy_ratio","middle_ratio",
                  "recency_ratio","DEP_CESD10_COF1")
-group_var<-"scd_status"
-
-pdf_file_name<-"cross_sectional_outcomes_visualization.pdf"
 
 # run function to get pdf with plots
-data_visualization_pdf(data3,plot_outcomes,group_var,pdf_file_name)
+data_visualization_pdf(data3,plot_outcomes,"scd_status","cross_sectional_plots.pdf")
 
 
 #skew and kurtosis
@@ -205,50 +195,19 @@ data4<-data3 %>%
 
 ##### multivariate outliers ####
 
-#create dataframe with variables needed to check for multivariate outliers
-data_md<-data4[,c("scd_status","ED_UDR04_COM","sex","AGE_NMBR_COF1",
+#vector for variables needed to check for multivariate outliers
+vars_md<-c("scd_status","ED_UDR04_COM","sex","AGE_NMBR_COF1",
                   "COG_REYI_SCORE_COF1","COG_REYII_SCORE_COF1",
-                  "DEP_CESD10_COF1","testing_lang")]
+                  "DEP_CESD10_COF1","testing_lang")
 
-#recode factor vars to numeric 
-data_md<-data_md%>%
-  mutate(
-    scd_status=as.numeric(scd_status),
-    sex=as.numeric(sex),
-    testing_lang=as.numeric(testing_lang)
-  )
-
-#calculate mahalanobis distance to find multivariate outliers
-center_val <- colMeans(data_md, na.rm = TRUE)
-cov_mat <- cov(data_md, use = "pairwise.complete.obs")
-mahalanobis_distances<-MDmiss(data_md, center = center_val, cov = cov_mat)
-
-# Generate chi-square quantiles
-chi_square_quantiles<-qchisq((1:nrow(data_md))/((nrow(data_md)) + 1),df=ncol(data_md))
-
-# Sort Mahalanobis distances to match chi-square quantiles
-sorted_mahal_distances<-sort(mahalanobis_distances)
-
-# Plot Mahalanobis distances vs. chi-square quantiles
-plot(chi_square_quantiles, sorted_mahal_distances, 
-     main = "Mahalanobis Distance vs. Chi-Square Quantiles",
-     pch = 19, col = "blue")
-abline(0, 1, col = "red", lwd = 2)
-
-#cutoff value for distances from chi-square dist with alpha = .001
-cutoff<-qchisq(p=0.999, df=ncol(data_md))
-summary(mahalanobis_distances<cutoff)
+# use check_multivariate_outliers() fuction with alpha = .001
+md_results<-check_multivariate_outliers(data4, vars_md,.001)
+md_results$summary
 
 #new dataset without outliers
-data5=data4[mahalanobis_distances<cutoff, ]
+data5 <- data4[md_results$mahalanobis_distances < md_results$cutoff, ]
 
 
 #### MEAN IMPUTATION OF CESD-10 VAR ####
-data5<-data5 %>%
-  group_by(scd_status) %>% #imputation by group
-  mutate(across(
-    .cols="DEP_CESD10_COF1", 
-    .fns= ~ifelse(is.na(.), mean(.,na.rm=TRUE), .)
-  ))%>%
-  ungroup()
+impute_by_group(data5, data6, "scd_status","DEP_CESD10_COF1")
 
