@@ -1,3 +1,17 @@
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+#### DATA CLEANING FUNCTIONS ####
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+#' function to replace missing values
+#' @param df dataframe 
+#' @param vars character vector with variables to recode
+#' @param codes numerical vector with missing code values
+#' 
+#' @return recoded variables
+replace_missing <- function(df,vars,codes) {
+  df %>%
+    mutate(across(all_of(vars),~replace(.x,.x %in% codes,NA_real_)))}
+
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #### DATA VISUALIZATION FUNCTIONS ####
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
