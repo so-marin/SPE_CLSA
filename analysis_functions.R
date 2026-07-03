@@ -214,15 +214,12 @@ regression_diagnostics<-function(data,outcome_vars,group_var,covariates,
   library(rstatix)
   library(car)
   
-
-  
   all_txt<-character()
 
   for (outcome in outcome_vars){
     
     pdf(paste0("diagnostics_", outcome, ".pdf"))
-    on.exit(dev.off(), add = TRUE)
-    
+
     model_formula=paste0(outcome,"~",group_var,"+",covariates)
     model<-lm(as.formula(model_formula), data=data)
     
