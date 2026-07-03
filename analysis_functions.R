@@ -225,8 +225,6 @@ regression_diagnostics<-function(data,outcome_vars,group_var,covariates,
 
   for (outcome in outcome_vars){
     
-    pdf(paste0("diagnostics_", outcome, ".pdf"))
-
     model_formula=paste0(outcome,"~",group_var,"+",covariates)
     model<-lm(as.formula(model_formula), data=data)
     
