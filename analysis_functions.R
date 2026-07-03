@@ -116,7 +116,7 @@ impute_by_group <- function(data,group_var, vars) {
 #' @param data dataframe
 #' @param plot_outcomes character vector with outcome variables to be plotted
 #' @param group_var grouping variable 
-#' @param pdf_file_name name of pdf file to be saved
+#' @param pdf_file_name name of pdf file to be saved. must be string (e.g., "name.pdf")
 #' 
 #' @return writes pdf file containing all plots
 
@@ -193,9 +193,12 @@ remove_group_outliers <- function(data, group_var, vars, z_cutoff = 3) {
 #' @param outcome_vars character vector of outcome variable names
 #' @param group_var name of grouping predictor variable (string)
 #' @param covariates string of covariate terms (e.g., "age+sex")
+#' @param txt_file_name name of txt file to be saved. must be string (e.g., "name.txt")
 #' 
 #' @return writes:
-#' diagnostic text files per outcome, diagnostic plots (png)
+#' If it does not already exist, creates a folder in working directory
+#'  called "regression_diagnostics"
+#' saves diagnostic text files per outcome, diagnostic plots (one pdf for each outcome)
 
 #' @details
 #' Uses:
@@ -205,16 +208,26 @@ remove_group_outliers <- function(data, group_var, vars, z_cutoff = 3) {
 #' VIF for multicollinearity
 #' augment() for residual diagnostics
 
-regression_diagnostics<-function(data,outcome_vars,group_var,covariates){
+regression_diagnostics<-function(data,outcome_vars,group_var,covariates,
+                                 txt_file_name){
   
   library(broom)
   library(lmtest)
   library(rstatix)
   library(car)
+  
+  all_txt<-character()
+  output_dir<-"regression_diagnostics"
+  
+  if (!dir.exists(output_dir)){
+    dir.create(output_dir)
+  }
 
   for (outcome in outcome_vars){
+    
     model_formula=paste0(outcome,"~",group_var,"+",covariates)
     model<-lm(as.formula(model_formula), data=data)
+    
     
     #write text file with model diagnostics 
     txt<-capture.output({
@@ -238,24 +251,42 @@ regression_diagnostics<-function(data,outcome_vars,group_var,covariates){
       cat("\n levene test\n") 
       print(augment(model)%>%
               levene_test(as.formula(paste(".resid~",group_var))))
-    }
+    })
+    
+    ## Append this outcome's text
+    all_txt <- c(
+      all_txt,
+      paste(rep("=", 80), collapse = ""),
+      txt,
+      ""
     )
     
-    writeLines(txt,con=paste0("diagnostics_",outcome,".txt"))
+    writeLines(
+      all_txt,
+      con = file.path(output_dir, txt_file_name)
+    )
     
-    # save diagnostic plots
-    for (i in 1:6){
-      png(filename=paste0("diag_",outcome,"_",i,".png"))
-      plot(model,which=i)
-      dev.off()
+    pdf(
+      file.path(
+        output_dir,
+        paste0("diagnostics_", outcome, ".pdf")
+      )
+    )
+    
+    ## Diagnostic plots
+    for (i in seq_len(6)) {
+      plot(model, which = i)
     }
-    # save histogram of residuals
-    png(filename=paste0("hist_resid",outcome,".png"))
-    hist(residuals(model), breaks = 30)
+    
+    hist(
+      residuals(model),
+      breaks = 30,
+      main = paste("Residuals:", outcome),
+      xlab = "Residual"
+    )
     dev.off()
   }
-  
-}
+}  
 
 ##### MIXED-EFFECTS MODEL DIAGNOSTICS ####
 #' creates diagnostic plots for mixed-effects models and saves onto  pdf file

@@ -11,8 +11,6 @@ library(officer)
 library(broom)
 
 
-#have working directory set
-setwd()
 source("analysis_functions.R")
 
 #~~~~~~~~~~~~~~~~~~~~#
@@ -71,10 +69,9 @@ outcomes<-c("COG_REYI_SCORE_COF1","COG_REYII_SCORE_COF1",
                 "primacy_ratio","middle_ratio","recency_ratio")
 predictor_vars<-c("AGE_NMBR_COF1","sex","ED_UDR04_COM","DEP_CESD10_COF1",
                   "testing_lang")
-group<-"scd_status"
 
 ##### RUN REGRESSION DIAGNOSTICS FUNCTION #####
-regression_diagnostics(data5,outcomes,group,predictor_vars)
+regression_diagnostics(data5,outcomes,"scd_status",predictor_vars,"diagnostics.txt")
 
 
 #~~~~~~~~~~~~~~~~~~~~#
@@ -106,8 +103,7 @@ data6<-data5%>%
 
 
 ##### DEFINE PARAMETERS #####
-group_var<-"scd_status"
-predictors_unstd<-"sex +mage+ medu + mceds10 + testing_lang"
+predicgtors_unstd<-"sex +mage+ medu + mceds10 + testing_lang"
 predictors_std<-"sex +zmage+ zmedu + zmceds10 + testing_lang"
 
 #unstandardized vars
@@ -122,7 +118,7 @@ outcomes_std<-c("zCOG_REYI_SCORE_COF1", "zCOG_REYII_SCORE_COF1",
 
 ##### CALL REGRESSION ESTIMATION FUNCTIONS #####
 # fit unstandardized regression models 
-unstd_mod<-fit_unstd_model(data6,outcomes_unstd,group_var,predictors_unstd)
+unstd_mod<-fit_unstd_model(data6,outcomes_unstd,"scd_status",predictors_unstd)
 #fit standardized regression models 
 std_mod<-fit_std_model(data6,outcomes_std,group_var,predictors_std)
 
