@@ -196,7 +196,9 @@ remove_group_outliers <- function(data, group_var, vars, z_cutoff = 3) {
 #' @param txt_file_name name of txt file to be saved. must be string (e.g., "name.txt")
 #' 
 #' @return writes:
-#' diagnostic text files per outcome, diagnostic plots (one pdf for each outcome)
+#' If it does not already exist, creates a folder in working directory
+#'  called "regression_diagnostics"
+#' saves diagnostic text files per outcome, diagnostic plots (one pdf for each outcome)
 
 #' @details
 #' Uses:
@@ -215,6 +217,11 @@ regression_diagnostics<-function(data,outcome_vars,group_var,covariates,
   library(car)
   
   all_txt<-character()
+  output_dir<-"regression_diagnostics"
+  
+  if (!dir.exists(output_dir)){
+    dir.create(output_dir)
+  }
 
   for (outcome in outcome_vars){
     
@@ -254,6 +261,18 @@ regression_diagnostics<-function(data,outcome_vars,group_var,covariates,
       paste(rep("=", 80), collapse = ""),
       txt,
       ""
+    )
+    
+    writeLines(
+      all_txt,
+      con = file.path(output_dir, txt_file_name)
+    )
+    
+    pdf(
+      file.path(
+        output_dir,
+        paste0("diagnostics_", outcome, ".pdf")
+      )
     )
     
     ## Diagnostic plots

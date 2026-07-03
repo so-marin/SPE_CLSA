@@ -10,3 +10,4 @@
 *.csv
 *.docx
 .txt
+regression_diagnostics/
