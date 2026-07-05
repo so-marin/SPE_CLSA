@@ -6,7 +6,7 @@ library(modi)
 library(psych)
 library(table1)
 
-
+source("analysis_functions.R")
 data <- read_csv("scd_spe_merged.csv")
 
 data1<-data%>%
@@ -23,7 +23,7 @@ data1<-data%>%
     ADM_SPECIAL_INHOME_COF1!=1, #phone admin fu1
     ADM_SPECIAL_INHOME_COF2!=1, #phone admin fu2    
     !SCD_MEMO_COF1%in%c(8,9,-88888), #scd missing fu1
-    !SCD_WORY_COF1%in%c(3,8,9,-88888), #scd worry missing or "undediced" (3) fu1
+    !SCD_WORY_COF1%in%c(3,8,9,-88888), #scd worry missing or "undecided" (3) fu1
     !GEN_MEMO_COF2%in%c(8,9,-88888) #scd missing fu2
   )%>%
   mutate(
@@ -187,17 +187,8 @@ missing_vars<-c("COG_REYI_SCORE_COF1","COG_REYII_SCORE_COF1",
 missing_vars_dems<-c("INC_TOT_COF1","INC_TOT_COF2","COG_REYI_STARTLANG_COF1","COG_REYI_STARTLANG_COF2",
                      "SDC_CULT_WH_COM")
 
-#' function to replace missing values
-#' @param df dataframe 
-#' @param vars character vector with variables to recode
-#' @param codes numerical vector with missing code values
-#' 
-#' @return recoded variables
 
-replace_missing <- function(df, vars, codes) {
-  df %>%
-    mutate(across(all_of(vars),~replace(.x, .x%in%codes, NA_real_)))}
-
+# use replace_missing() function
 data4<-replace_missing(data3, missing_vars,missing_codes)
 data4<-replace_missing(data4, missing_vars_dems, missing_dems)
 
@@ -229,7 +220,7 @@ data4<-data4%>%
 
 
 # Fit logistic regression
-model <- glm(ravlt_missing_any ~ scd_status+sex+AGE_NMBR_COF1+ED_UDR04_COM+testing_lang+DEP_CESD10_COF1+DEP_CESD10_COF2, 
+missing_model <- glm(ravlt_missing_any ~ scd_status+sex+AGE_NMBR_COF1+ED_UDR04_COM+testing_lang+DEP_CESD10_COF1+DEP_CESD10_COF2, 
              data = data4, 
              family = binomial)
 
@@ -237,6 +228,9 @@ model <- glm(ravlt_missing_any ~ scd_status+sex+AGE_NMBR_COF1+ED_UDR04_COM+testi
 summary(model)
 exp(coef(model))
 exp(confint(model))
+
+capture.output(summary(missing_model), file = "logistic_regression_output_longitudinal.txt")
+
 
 ##### exclude people with no RAVLT data ####
 data4<-data4%>%
@@ -258,71 +252,37 @@ plot_outcomes<-c("COG_REYII_SCORE_COF1", "COG_REYI_SCORE_COF1",
                  "primacy1_SPE_fu2","primacy2_SPE_fu2","middle1_SPE_fu2","middle2_SPE_fu2",
                  "recency1_SPE_fu2","recency2_SPE_fu2",
                  "DEP_CESD10_COF1","DEP_CESD10_COF2")
-group_var<-"scd_status"
-
-pdf_file_name<-"longitudinal_outcomes_visualization.pdf"
 
 # run function to get pdf with plots
-data_visualization_pdf(data4,plot_outcomes,group_var,pdf_file_name)
-
+data_visualization_pdf(data4,plot_outcomes,"scd_status","longitudinal_plots.pdf")
 
 #skew and kurtosis
 describe(data4[, plot_outcomes])
 
 
 ##### univariate outliers ####
-outliers<-c("COG_REYII_SCORE_COF1", "COG_REYI_SCORE_COF1","COG_REYII_SCORE_COF2", "COG_REYI_SCORE_COF2")
+outlier_vars<-c("COG_REYII_SCORE_COF1", "COG_REYI_SCORE_COF1","COG_REYII_SCORE_COF2", "COG_REYI_SCORE_COF2")
 
-# exclude when z score is >= abs(3)
-data5<-data4 %>%
-  group_by(scd_status)%>% #search by scd group
-  filter(
-    !if_any(all_of(outliers),~{
-      z<-(.x - mean(.x, na.rm = TRUE))/sd(.x, na.rm = TRUE)
-      !is.na(z)&abs(z)>3
-    })
-  ) %>%
-  ungroup()
+data5<-remove_group_outliers(data4, "scd_status", outlier_vars)
 
 
 ##### multivariate outliers ####
 
 #create dataframe with variables needed to check for multivariate outliers
-data_md<-data5[,c("scd_status","ED_UDR04_COM","sex","AGE_NMBR_COF1",
-                  "COG_REYI_SCORE_COF1","COG_REYII_SCORE_COF1","DEP_CESD10_COF1","testing_lang",
-                  "COG_REYI_SCORE_COF2","COG_REYII_SCORE_COF2","DEP_CESD10_COF2")]
+vars_md<-c("scd_status","ED_UDR04_COM","sex","AGE_NMBR_COF1",
+            "COG_REYI_SCORE_COF1","COG_REYII_SCORE_COF1","DEP_CESD10_COF1","testing_lang",
+            "COG_REYI_SCORE_COF2","COG_REYII_SCORE_COF2","DEP_CESD10_COF2")
 
-#recode factor vars to numeric 
-data_md<-data_md%>%
-  mutate(
-    scd_status=as.numeric(scd_status),
-    sex=as.numeric(sex),
-    testing_lang=as.numeric(testing_lang)
-  )
 
-#calculate mahalanobis distance to find multivariate outliers
-center_val <- colMeans(data_md, na.rm = TRUE)
-cov_mat <- cov(data_md, use = "pairwise.complete.obs")
-mahalanobis_distances <- MDmiss(data_md, center = center_val, cov = cov_mat)
-
-# Generate chi-square quantiles
-chi_square_quantiles <- qchisq((1:nrow(data_md)) / ((nrow(data_md)) + 1), df = ncol(data_md))
-
-# Sort Mahalanobis distances to match chi-square quantiles
-sorted_mahal_distances <- sort(mahalanobis_distances)
-
-# Plot Mahalanobis distances vs. chi-square quantiles
-plot(chi_square_quantiles, sorted_mahal_distances, 
-     main = "Mahalanobis Distance vs. Chi-Square Quantiles",
-     pch = 19, col = "blue")
-abline(0, 1, col = "red", lwd = 2)
-
-#cutoff value for distances from chi-square dist with alpha = .001
-cutoff<-qchisq(p=0.999, df=ncol(data_md))
-summary(mahalanobis_distances<cutoff)
+# use check_multivariate_outliers() fuction with alpha = .001
+md_results<-check_multivariate_outliers(data5, vars_md)
+md_results$summary
 
 #new dataset without outliers
-data6=data5[mahalanobis_distances<cutoff, ]
+data6 <- data5[md_results$mahalanobis_distances < md_results$cutoff, ]
+
+
+
 
 
 #### MEAN IMPUTATION OF CESD-10 VAR ####
