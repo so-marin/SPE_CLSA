@@ -5,7 +5,7 @@ library(rstatix)
 library(psych)
 
 
-source("analysis.functions.R")
+source("analysis_functions.R")
 
 data<-read_csv("scd_spe_merged.csv")
 
