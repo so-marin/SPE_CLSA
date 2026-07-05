@@ -44,9 +44,9 @@ data1<-data%>%
   
 
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#### EXCLUSION CRITERIA ####
-#~~~~~~~~~~~~~~~~~~~~~~~~~~#
+#~~~~~~~~~~~~~~~~~~~~~~~#
+# EXCLUSION CRITERIA ####
+#~~~~~~~~~~~~~~~~~~~~~~~#
 
 data2<-data1
 
@@ -68,7 +68,7 @@ data2<-data2%>% #flag for TBI with LoC
                                 TBI_RSLT_KO2030_COF2 +TBI_RSLT_KO30MORE_COF2 > 0))
 
 
-##### apply exclusion criteria ####
+## apply exclusion criteria ####
 exclusion_vars<-c("CCC_ALZH_COF1","CCC_CVA_COF1","CCC_MEMPB_COF1",
                   "CCC_MS_COF1","CCC_TIA_COF1","CCC_EPIL_COF1",
                   "CCC_PARK_COF1","TBI_POS_COF1",
@@ -84,13 +84,13 @@ for (var in exclusion_vars){
 }
 
 
-#~~~~~~~~~~~~~~#
-#### SCALES ####
-#~~~~~~~~~~~~~~#
+#~~~~~~~~~~~#
+# SCALES ####
+#~~~~~~~~~~~#
 
-#### RAVLT #####
+## RAVLT #####
 
-##### recode RAVLT item values ####
+### recode RAVLT item values ####
 data3 <- data2 %>%
   mutate(across(
     ends_with(c("CAT_COF1", "CAT_COF2")),
@@ -100,7 +100,7 @@ data3 <- data2 %>%
       TRUE ~ .)))
 
 
-##### calculate serial position totals ####
+### calculate serial position totals ####
 data3<-data3 %>%
   mutate(
     primacy1_fu1=rowSums(select(.,matches("^COG_REYI_[1-4]_CAT_COF1$"))),
@@ -132,7 +132,7 @@ data3<-data3 %>%
 
 
 
-#### CESD-10 ####
+## CESD-10 ####
 
 #CESD-10 variables
 cesd10_vars_fu2<-c("DEP_BOTR_COF2","DEP_MIND_COF2","DEP_FLDP_COF2","DEP_FFRT_COF2",
@@ -173,11 +173,11 @@ data3<-data3 %>%
 
 
 
-#~~~~~~~~~~~~~~~~~~~~#
-#### MISSING DATA ####
-#~~~~~~~~~~~~~~~~~~~~#
+#~~~~~~~~~~~~~~~~~#
+# MISSING DATA ####
+#~~~~~~~~~~~~~~~~~#
 
-##### recode missing data ####
+## recode missing data ####
 missing_codes <- c(-99999, -88888,-88887,-77771,-77772)
 missing_dems<-c(8,9,-88888,-99999)
 
@@ -193,7 +193,10 @@ data4<-replace_missing(data3, missing_vars,missing_codes)
 data4<-replace_missing(data4, missing_vars_dems, missing_dems)
 
 
-# check % missing
+
+## missing value analysis ####
+
+### check % missing ####
 model_vars<-data4[,c("COG_REYI_SCORE_COF1","COG_REYII_SCORE_COF1",
                      "COG_REYI_SCORE_COF2","COG_REYII_SCORE_COF2",
                      "DEP_CESD10_COF1","DEP_CESD10_COF2",
@@ -201,9 +204,6 @@ model_vars<-data4[,c("COG_REYI_SCORE_COF1","COG_REYII_SCORE_COF1",
 
 missing<-sapply(model_vars, function(x)mean(is.na(x))*100)
 print(missing)
-
-
-##### missing value analysis ####
 
 data4<-data4%>%
   mutate(
@@ -219,7 +219,7 @@ data4<-data4%>%
     )
 
 
-# Fit logistic regression
+### Fit logistic regression ####
 missing_model <- glm(ravlt_missing_any ~ scd_status+sex+AGE_NMBR_COF1+ED_UDR04_COM+testing_lang+DEP_CESD10_COF1+DEP_CESD10_COF2, 
              data = data4, 
              family = binomial)
@@ -232,17 +232,17 @@ exp(confint(model))
 capture.output(summary(missing_model), file = "logistic_regression_output_longitudinal.txt")
 
 
-##### exclude people with no RAVLT data ####
+## exclude people with no RAVLT data ####
 data4<-data4%>%
   filter(!ravlt_missing_any==1)
 
 
 
-#~~~~~~~~~~~~~~~~#
-#### OUTLIERS ####
-#~~~~~~~~~~~~~~~~#
+#~~~~~~~~~~~~~#
+# OUTLIERS ####
+#~~~~~~~~~~~~~#
 
-##### data visualization ####
+## data visualization ####
 
 #define parameters for visualization function 
 plot_outcomes<-c("COG_REYII_SCORE_COF1", "COG_REYI_SCORE_COF1",
@@ -260,13 +260,13 @@ data_visualization_pdf(data4,plot_outcomes,"scd_status","longitudinal_plots.pdf"
 describe(data4[, plot_outcomes])
 
 
-##### univariate outliers ####
+## univariate outliers ####
 outlier_vars<-c("COG_REYII_SCORE_COF1", "COG_REYI_SCORE_COF1","COG_REYII_SCORE_COF2", "COG_REYI_SCORE_COF2")
 
 data5<-remove_group_outliers(data4, "scd_status", outlier_vars)
 
 
-##### multivariate outliers ####
+## multivariate outliers ####
 
 #create dataframe with variables needed to check for multivariate outliers
 vars_md<-c("scd_status","ED_UDR04_COM","sex","AGE_NMBR_COF1",
@@ -282,15 +282,6 @@ md_results$summary
 data6 <- data5[md_results$mahalanobis_distances < md_results$cutoff, ]
 
 
-
-
-
-#### MEAN IMPUTATION OF CESD-10 VAR ####
-data6 <- data6 %>%
-  group_by(scd_status) %>% #imputation by group
-  mutate(across(
-    .cols = c(DEP_CESD10_COF1,DEP_CESD10_COF2), 
-    .fns = ~ ifelse(is.na(.), mean(., na.rm = TRUE), .)
-  )) %>%
-  ungroup()
+# MEAN IMPUTATION OF CESD-10 VAR ####
+data6<-impute_by_group(data6, "scd_status",c("DEP_CESD10_COF1","DEP_CESD10_COF2"))
 
