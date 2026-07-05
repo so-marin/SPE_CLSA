@@ -190,9 +190,9 @@ remove_group_outliers <- function(data, group_var, vars, z_cutoff = 3) {
 #' outputs standard diagnostics for linear regression models
 #' 
 #' @param data dataframe containing all variables
-#' @param outcome_vars character vector of outcome variable names
-#' @param group_var name of grouping predictor variable (string)
-#' @param covariates string of covariate terms (e.g., "age+sex")
+#' @param outcome_vars character vector of outcome variable names (e.g., c("var1", "var2"))
+#' @param group_var name of grouping predictor variable. must be string (e.g., "group")
+#' @param covariates string of covariate terms (e.g., "age + sex")
 #' @param txt_file_name name of txt file to be saved. must be string (e.g., "name.txt")
 #' 
 #' @return writes:
@@ -292,10 +292,10 @@ regression_diagnostics<-function(data,outcome_vars,group_var,covariates,
 #' creates diagnostic plots for mixed-effects models and saves onto  pdf file
 #' 
 #' @param data Data frame
-#' @param outcome_vars Character vector of outcomes
-#' @param group_var Grouping variable (fixed effect)
-#' @param covariates String of covariate terms, separated by "+"
-#' @param id_var Subject ID variable for random intercept
+#' @param outcome_vars Character vector of outcomes (e.g., c("var1", "var2"))
+#' @param group_var Grouping variable (fixed effect). must be string (e.g., "group")
+#' @param covariates String of covariate terms, separated by "+" (e.g., "sex + age")
+#' @param id_var Subject ID variable for random intercept. must be string
 #' 
 #' @return PDF file containing diagnostic plots 
 #' 
@@ -303,7 +303,7 @@ regression_diagnostics<-function(data,outcome_vars,group_var,covariates,
 #' residual vs fitted plot
 #' residual qq plot
 #' random effects qq plot
-#' resituals histogram 
+#' residuals histogram 
 
 mem_diagnostics<-function(data, outcome_vars, group_var, covariates, id_var){
   
@@ -345,9 +345,9 @@ mem_diagnostics<-function(data, outcome_vars, group_var, covariates, id_var){
 #' fit unstandardized linear regression models 
 #' 
 #' @param data data frame
-#' @param outcome_vars character vector of outcomes
-#' @param group_var group predictor variable
-#' @param covariates String of covariate terms, separated by "+"
+#' @param outcome_vars character vector of outcomes (e.g., c("var1", "var2"))
+#' @param group_var group predictor variable. must be string (e.g., "group")
+#' @param covariates String of covariate terms, separated by "+" (e.g., "sex + age")
 #' 
 #' @return List containing:
 #' coef: tidy regression coefficients with CIs
@@ -355,6 +355,9 @@ mem_diagnostics<-function(data, outcome_vars, group_var, covariates, id_var){
 #' estimated marginal means by group
 
 fit_unstd_model<-function(data,outcome_vars,group_var,covariates){
+  library(emmeans)
+  library(tidyr)
+  
   results_unstd_list<-list()
   r2_list<-list()
   emm_list<-list()
@@ -385,9 +388,9 @@ fit_unstd_model<-function(data,outcome_vars,group_var,covariates){
 #' Fits regression models using standardized variables
 #' 
 #' @param data data frame
-#' @param outcome_vars character vector of outcomes
-#' @param group_var group predictor variable
-#' @param covariates String of covariate terms, separated by "+"
+#' @param outcome_vars character vector of outcomes (e.g., c("var1", "var2"))
+#' @param group_var group predictor variable. must be string (e.g., "group")
+#' @param covariates String of covariate terms, separated by "+" (e.g., "sex + age")
 #' 
 #' @return standardized beta coefficients and confidence intervals only
 
@@ -429,10 +432,10 @@ fit_std_model<-function(data,outcome_vars,group_var,covariates){
 #' - Random intercept for subject ID
 #'
 #' @param data Data frame containing all variables used in the model
-#' @param outcome_vars Character vector of outcome variable names
-#' @param group_var Name of grouping variable (string)
-#' @param covariates String of covariate terms, separated by "+" 
-#' @param id_var Name of subject identifier variable for random intercept
+#' @param outcome_vars character vector of outcomes (e.g., c("var1", "var2"))
+#' @param group_var group predictor variable. must be string (e.g., "group")
+#' @param covariates String of covariate terms, separated by "+" (e.g., "sex + age")
+#' @param id_var Name of subject identifier variable for random intercept. must be string
 #'
 #' @return A list with:
 #' coef: tibble of fixed-effect estimates with confidence intervals
@@ -470,10 +473,10 @@ fit_unstd_long_model<-function(data, outcome_vars, group_var, covariates, id_var
 #' Fit standardized longitudinal mixed-effects models
 #'
 #' @param data Data frame containing standardized outcomes
-#' @param outcome_vars Character vector of standardized outcome variable names
-#' @param group_var Name of grouping variable (string)
-#' @param covariates String of covariate terms, separated by "+"
-#' @param id_var Subject identifier variable for random intercept
+#' @param outcome_vars character vector of outcomes (e.g., c("var1", "var2"))
+#' @param group_var group predictor variable. must be string (e.g., "group")
+#' @param covariates String of covariate terms, separated by "+" (e.g., "sex + age")
+#' @param id_var Subject identifier variable for random intercept. must be string
 #'
 #' @return tibble containing:
 #' Outcome: outcome name (cleaned of "z" prefix)
