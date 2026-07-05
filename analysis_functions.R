@@ -303,7 +303,7 @@ regression_diagnostics<-function(data,outcome_vars,group_var,covariates,
 #' residual vs fitted plot
 #' residual qq plot
 #' random effects qq plot
-#' resituals histogram 
+#' residuals histogram 
 
 mem_diagnostics<-function(data, outcome_vars, group_var, covariates, id_var){
   

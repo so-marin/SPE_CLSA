@@ -2,7 +2,6 @@ library(tidyverse)
 library(table1)
 library(car)
 library(effectsize)
-library(emmeans)
 library(broom)
 library(rstatix)
 library(lmtest)
@@ -71,7 +70,7 @@ predictor_vars<-c("AGE_NMBR_COF1","sex","ED_UDR04_COM","DEP_CESD10_COF1",
                   "testing_lang")
 
 ##### RUN REGRESSION DIAGNOSTICS FUNCTION #####
-regression_diagnostics(data5,outcomes,"scd_status",predictor_vars,"diagnostics.txt")
+regression_diagnostics(data5,outcomes,"scd_status",predictor_vars,"long_diagnostics.txt")
 
 
 #~~~~~~~~~~~~~~~~~~~~#
@@ -103,7 +102,7 @@ data6<-data5%>%
 
 
 ##### DEFINE PARAMETERS #####
-predicgtors_unstd<-"sex +mage+ medu + mceds10 + testing_lang"
+predictors_unstd<-"sex +mage+ medu + mceds10 + testing_lang"
 predictors_std<-"sex +zmage+ zmedu + zmceds10 + testing_lang"
 
 #unstandardized vars
@@ -120,7 +119,7 @@ outcomes_std<-c("zCOG_REYI_SCORE_COF1", "zCOG_REYII_SCORE_COF1",
 # fit unstandardized regression models 
 unstd_mod<-fit_unstd_model(data6,outcomes_unstd,"scd_status",predictors_unstd)
 #fit standardized regression models 
-std_mod<-fit_std_model(data6,outcomes_std,group_var,predictors_std)
+std_mod<-fit_std_model(data6,outcomes_std,"scd_status",predictors_std)
 
 ##### MERGE UNSTANDARDIZED AND STANDARDIZED MODEL OUTPUTS #####
 all_results<-left_join(
