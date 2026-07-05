@@ -8,6 +8,7 @@ library(lmtest)
 library(flextable)
 library(officer)
 library(broom)
+library(emmeans)
 
 
 source("analysis_functions.R")
@@ -143,9 +144,9 @@ ratio_outcomes_std<-c("zprimacy_ratio","zmiddle_ratio","zrecency_ratio")
 
 ##### CALL REGRESSION ESTIMATION FUNCTIONS #####
 # fit unstandardized regression models 
-ratio_unstd_mod<-fit_unstd_model(data6,ratio_outcomes_unstd,group_var,predictors_unstd)
+ratio_unstd_mod<-fit_unstd_model(data6,ratio_outcomes_unstd,"scd_status",predictors_unstd)
 # fit standardized regression models 
-ratio_std_mod<-fit_std_model(data6,ratio_outcomes_std,group_var,predictors_std)
+ratio_std_mod<-fit_std_model(data6,ratio_outcomes_std,"scd_status",predictors_std)
 
 ##### MERGE UNSTANDARDIZED AND STANDARDIZED MODEL OUTPUTS #####
 all_ratio_results<-left_join(
