@@ -13,47 +13,49 @@ library(emmeans)
 
 source("analysis_functions.R")
 
+data<-read.csv("data_clean.csv")
+
 #~~~~~~~~~~~~~~~~~~~~#
 #### DEMOGRAPHICS ####
 #~~~~~~~~~~~~~~~~~~~~#
 
-data5<-data5%>%
+data<-data%>%
   mutate(
     edu=factor(ED_UDR04_COM),
     inc=factor(INC_TOT_COF1)
     )
 
-table1(~AGE_NMBR_COF1+sex+edu+testing_lang+DEP_CESD10_COF1+ethnicity+inc |scd_status,data=data5)
+table1(~AGE_NMBR_COF1+sex+edu+testing_lang+DEP_CESD10_COF1+ethnicity+inc |scd_status,data=data)
 
 ##### CONTINUOUS VARIABLES #####
 # anova + posthocs 
-age<-lm(AGE_NMBR_COF1~scd_status, data=data5)
+age<-lm(AGE_NMBR_COF1~scd_status, data=data)
 anova(age)
 em_age <- emmeans(age, ~ scd_status)
 contrast(em_age, method="pairwise",adjust="bonferroni")
 eta_squared(age) #effect sizes
 
-dep<-lm(DEP_CESD10_COF1~scd_status, data=data5)
+dep<-lm(DEP_CESD10_COF1~scd_status, data=data)
 anova(dep)
 em_dep <- emmeans(dep, ~ scd_status)
 contrast(em_dep, method="pairwise",adjust="bonferroni")
 eta_squared(dep)
 
 ##### CATEGORICAL VARIABLES #####
-kruskal.test(inc~scd_status, data=data5)
-pairwise.wilcox.test(data5$INC_TOT_COF1, data5$scd_status, p.adjust="bonferroni")
-tapply(data5$INC_TOT_COF1, data5$scd_status, median, na.rm=TRUE)
+kruskal.test(inc~scd_status, data=data)
+pairwise.wilcox.test(data$INC_TOT_COF1, data$scd_status, p.adjust="bonferroni")
+tapply(data$INC_TOT_COF1, data$scd_status, median, na.rm=TRUE)
 
-kruskal.test(edu~scd_status, data=data5)
-pairwise.wilcox.test(data5$ED_UDR04_COM, data5$scd_status, p.adjust="bonferroni")
-tapply(data5$ED_UDR04_COM, data5$scd_status, median, na.rm=TRUE)
+kruskal.test(edu~scd_status, data=data)
+pairwise.wilcox.test(data$ED_UDR04_COM, data$scd_status, p.adjust="bonferroni")
+tapply(data$ED_UDR04_COM, data$scd_status, median, na.rm=TRUE)
 
 # chi square tests 
-sex<-chisq.test(table(data5$sex, data5$scd_status))
+sex<-chisq.test(table(data$sex, data$scd_status))
 sex
 sex$stdres
 
-lang<-chisq.test(table(data5$testing_lang, data5$scd_status))
+lang<-chisq.test(table(data$testing_lang, data$scd_status))
 lang
 lang$stdres
 
@@ -71,7 +73,7 @@ predictor_vars<-c("AGE_NMBR_COF1","sex","ED_UDR04_COM","DEP_CESD10_COF1",
                   "testing_lang")
 
 ##### RUN REGRESSION DIAGNOSTICS FUNCTION #####
-regression_diagnostics(data5,outcomes,"scd_status",predictor_vars,"long_diagnostics.txt")
+regression_diagnostics(data,outcomes,"scd_status",predictor_vars,"long_diagnostics.txt")
 
 
 #~~~~~~~~~~~~~~~~~~~~#
@@ -86,7 +88,7 @@ z_vars<-c("COG_REYI_SCORE_COF1",
           "primacy2_SPE","middle2_SPE","recency2_SPE",
           "primacy_ratio","middle_ratio","recency_ratio")
 
-data6<-data5%>%
+data1<-data%>%
   mutate(
     #mean center continuous covariates
     mage=scale(AGE_NMBR_COF1, center=TRUE, scale=FALSE),
@@ -118,9 +120,9 @@ outcomes_std<-c("zCOG_REYI_SCORE_COF1", "zCOG_REYII_SCORE_COF1",
 
 ##### CALL REGRESSION ESTIMATION FUNCTIONS #####
 # fit unstandardized regression models 
-unstd_mod<-fit_unstd_model(data6,outcomes_unstd,"scd_status",predictors_unstd)
+unstd_mod<-fit_unstd_model(data1,outcomes_unstd,"scd_status",predictors_unstd)
 #fit standardized regression models 
-std_mod<-fit_std_model(data6,outcomes_std,"scd_status",predictors_std)
+std_mod<-fit_std_model(data1,outcomes_std,"scd_status",predictors_std)
 
 ##### MERGE UNSTANDARDIZED AND STANDARDIZED MODEL OUTPUTS #####
 all_results<-left_join(
@@ -144,9 +146,9 @@ ratio_outcomes_std<-c("zprimacy_ratio","zmiddle_ratio","zrecency_ratio")
 
 ##### CALL REGRESSION ESTIMATION FUNCTIONS #####
 # fit unstandardized regression models 
-ratio_unstd_mod<-fit_unstd_model(data6,ratio_outcomes_unstd,"scd_status",predictors_unstd)
+ratio_unstd_mod<-fit_unstd_model(data1,ratio_outcomes_unstd,"scd_status",predictors_unstd)
 # fit standardized regression models 
-ratio_std_mod<-fit_std_model(data6,ratio_outcomes_std,"scd_status",predictors_std)
+ratio_std_mod<-fit_std_model(data1,ratio_outcomes_std,"scd_status",predictors_std)
 
 ##### MERGE UNSTANDARDIZED AND STANDARDIZED MODEL OUTPUTS #####
 all_ratio_results<-left_join(
