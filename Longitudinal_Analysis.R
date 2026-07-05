@@ -7,15 +7,13 @@ library(lme4)
 library(officer)
 library(flextable)
 library(broom)
+
 source("analysis_functions.R")
+data<-read.csv("longitudinal_data_clean.csv")
 
-
-#have working directory set
-setwd()
-
-#~~~~~~~~~~~~~~~~~~~~#
-#### DEMOGRAPHICS ####
-#~~~~~~~~~~~~~~~~~~~~#
+#~~~~~~~~~~~~~~~~~#
+# DEMOGRAPHICS ####
+#~~~~~~~~~~~~~~~~~#
 
 data6<-data6%>%
   mutate(
@@ -24,7 +22,7 @@ data6<-data6%>%
 
 table1(~AGE_NMBR_COF1+sex+edu+testing_lang+DEP_CESD10_COF1+DEP_CESD10_COF2+ethnicity+inc |scd_status,data=data6)
 
-##### CONTINUOUS VARIABLES ####
+## CONTINUOUS VARIABLES ####
 # anova + posthocs 
 age<-lm(AGE_NMBR_COF1~scd_status, data=data6)
 anova(age)
@@ -44,7 +42,7 @@ em_dep2 <- emmeans(dep2, ~ scd_status)
 contrast(em_dep2, method="pairwise",adjust="bonferroni")
 eta_squared(dep2)
 
-##### CATEGORICAL VARIABLES ####
+## CATEGORICAL VARIABLES ####
 kruskal.test(edu~scd_status, data=data6)
 pairwise.wilcox.test(data6$ED_UDR04_COM, data6$scd_status, p.adjust="bonferroni")
 tapply(data6$ED_UDR04_COM, data6$scd_status, median, na.rm=TRUE)
@@ -60,12 +58,12 @@ lang$stdres
 
 
 
-#~~~~~~~~~~~~~~~~~~~#
-#### FORMAT DATA ####
-#~~~~~~~~~~~~~~~~~~~#
+#~~~~~~~~~~~~~~~~#
+# FORMAT DATA ####
+#~~~~~~~~~~~~~~~~#
 
 #subset dataset to variables required for longitudinal analysis
-data7<-data6[,c("entity_id","scd_status","sex","testing_lang","ED_UDR04_COM","AGE_NMBR_COF1",
+data1<-data[,c("entity_id","scd_status","sex","testing_lang","ED_UDR04_COM","AGE_NMBR_COF1",
                 "DEP_CESD10_COF1","DEP_CESD10_COF2",
                 "COG_REYI_SCORE_COF1","COG_REYI_SCORE_COF2","COG_REYII_SCORE_COF1",
                 "COG_REYII_SCORE_COF2","primacy1_SPE_fu1","primacy1_SPE_fu2",
@@ -81,7 +79,7 @@ z_vars<-c("COG_REYI_SCORE_COF1","COG_REYI_SCORE_COF2","COG_REYII_SCORE_COF1",
           "middle1_SPE_fu2","middle2_SPE_fu2")
 
 ##### MEAN-CENTER AND STANDARDIZE VARIABLES, REFORMAT VARIABLE NAMES ####
-data7<-data7%>%
+data1<-data1%>%
   mutate(
     #mean centering for unstandardized models 
     mage=scale(AGE_NMBR_COF1, center=TRUE, scale=FALSE), #mean center
@@ -105,7 +103,7 @@ data7<-data7%>%
 
 
 # final anlaytic dataset
-data_final<-data7[,c("entity_id","scd_status","testing_lang","sex","mage","medu","mcesd10_fu1","mcesd10_fu2",
+data_final<-data1[,c("entity_id","scd_status","testing_lang","sex","mage","medu","mcesd10_fu1","mcesd10_fu2",
                             "COG_REYI_SCORE_fu1","COG_REYI_SCORE_fu2","COG_REYII_SCORE_fu1","COG_REYII_SCORE_fu2",
                             "primacy1_fu1","primacy1_fu2","primacy2_fu1","primacy2_fu2",
                             "recency1_fu1","recency1_fu2","recency2_fu1","recency2_fu2",
@@ -127,51 +125,50 @@ data_long<-data_final %>%
   )
 
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#### MIXED EFFECTS MODEL DIAGNOSTICS ####
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+# MIXED EFFECTS MODEL DIAGNOSTICS ####
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
-##### DEFINE PARAMETERS #####
+## DEFINE PARAMETERS #####
 #model specification inputs for diagnostic pipeline
 outcomes<-c("COG_REYI_SCORE","COG_REYII_SCORE","primacy1","middle1","recency1",
             "primacy2","middle2","recency2")
 predictor_vars<-"mage+sex+medu+mcesd10+testing_lang"
-group<-"scd_status"
-id<-"entity_id"
-
-##### RUN MIXED-EFFECTS MODEL DIAGNOSTICS FUNCTION #####
-diagnostics<-mem_diagnostics(data_long,outcomes,group,predictor_vars,id)
 
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#### SPE MIXED EFFECTS MODELS ####
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+## RUN MIXED-EFFECTS MODEL DIAGNOSTICS FUNCTION #####
+diagnostics<-mem_diagnostics(data_long,outcomes,"scd_status",predictor_vars,"entity_id")
 
-##### DEFINE PARAMETERS ####
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+# SPE MIXED EFFECTS MODELS ####
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+
+## DEFINE PARAMETERS ####
 #model specification inputs for mixed effects functions
-group<-"scd_status"
 outcomes_unstd<-c("COG_REYI_SCORE","COG_REYII_SCORE","primacy1","middle1","recency1",
                   "primacy2","middle2","recency2")
 outcomes_std<-c("zCOG_REYI_SCORE","zCOG_REYII_SCORE","zprimacy1","zmiddle1","zrecency1",
                 "zprimacy2","zmiddle2","zrecency2")
 covariates_unstd<-"medu + sex + mage + mcesd10 + testing_lang"
 covariates_std<-"zmedu + sex + zmage + zmcesd10 + testing_lang"
-id<-"entity_id"
 
-##### CALL MODEL ESTIMATION FUNCTIONS ####
+## MODEL ESTIMATION FUNCTIONS ####
 #fit unstandardized models
-unstd_long_mod<-fit_unstd_long_model(data_long, outcomes_unstd, group, covariates_unstd, id)
+unstd_long_mod<-fit_unstd_long_model(data_long, outcomes_unstd, "scd_status", 
+                                     covariates_unstd, "entity_id")
 #fit standardized models 
-std_long_mod<-fit_std_long_model(data_long, outcomes_std, group, covariates_std, id)
+std_long_mod<-fit_std_long_model(data_long, outcomes_std, "scd_status", 
+                                 covariates_std, "entity_id")
 
-##### MERGE STANDARDIZED AND UNSTANDARDIZED MODELS OUTPUTS #### 
+## MERGE STANDARDIZED AND UNSTANDARDIZED MODELS OUTPUTS #### 
 all_results_long<-left_join(
   unstd_long_mod$coef, std_long_mod, by=c("Outcome","term"))
 
-##### REFORMAT OUTPUTS #####
+## REFORMAT OUTPUTS #####
 results_final_long<-format_results(all_results_long)
 
-##### CREATE WORD DOCUMENT WITH OUTPUTS #####
+## CREATE WORD DOCUMENT WITH OUTPUTS #####
 doc<-create_results_long_doc(results_final_long)
 
 #will save in wd
@@ -179,11 +176,11 @@ print(doc, target="results_long.docx")
 
 
 
-#~~~~~~~~~~~~~#
-#### PLOTS ####
-#~~~~~~~~~~~~~#
+#~~~~~~~~~~#
+# PLOTS ####
+#~~~~~~~~~~#
 
-##### SPE PLOTS #####
+## SPE PLOTS ####
 
 spe_plot <- c("primacy1", "primacy2", "middle1", "middle2", "recency1", "recency2")
 
@@ -240,7 +237,7 @@ ggsave("spe_curves1.png", plot=p, width=8, height=6, units="in",dpi=600)
 
 
 
-##### TOTAL RAVLT RECALL PLOTS ####
+## TOTAL RAVLT RECALL PLOTS ####
 
 ravlt<-c("COG_REYI_SCORE","COG_REYII_SCORE")
 
@@ -284,7 +281,7 @@ ggsave("bar_graphs.png", plot = q, width = 8, height = 6, units = "in", dpi = 60
 
 
 
-##### FACETED EMM PLOTS ####
+## FACETED EMM PLOTS ####
 
 combined_emms<-unstd_long_mod$emm %>%
   mutate(
