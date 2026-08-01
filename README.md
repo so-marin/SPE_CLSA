@@ -4,7 +4,7 @@ Last Updated: July 8th 2026
 
 ## Overview
 
-This repository contains the data processing and statistical analysis pipeline accompanying Marinou et al. (2026), *Does the serial position effect identify those at risk for dementia? Findings from the Canadian Longitudinal Study on Aging.*
+This repository contains the data processing and statistical analysis pipeline accompanying Marinou et al. (2026), *Does the serial position effect identify those at risk for dementia? Findings from the Canadian Longitudinal Study on Aging.* DOI: https://doi.org/10.1037/neu0001123
 
 The repository provides reproducible workflows for both cross-sectional and longitudinal analyses of serial position effect (SPE) measures in the Canadian Longitudinal Study on Aging (CLSA). Shared utility functions are used across both workflows for data cleaning, visualization, model diagnostics, statistical modelling, and reporting.
 
