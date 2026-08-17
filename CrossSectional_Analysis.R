@@ -88,7 +88,7 @@ z_vars<-c("COG_REYI_SCORE_COF1",
           "primacy2_SPE","middle2_SPE","recency2_SPE",
           "primacy_ratio","middle_ratio","recency_ratio")
 
-data1<-data%>%
+data1<-data6%>%
   mutate(
     #mean center continuous covariates
     mage=scale(AGE_NMBR_COF1, center=TRUE, scale=FALSE),
@@ -159,7 +159,7 @@ ratio_results_final<-format_results(all_ratio_results)
 
 ##### CREATE WORD DOCUMENT WITH MODEL OUTPUTS #####
 ratio_doc<-create_results_doc(ratio_results_final,ratio_unstd_mod$r2)
-print(doc, target="ratio_results.docx")
+print(ratio_doc, target="ratio_results.docx")
 
 
 #~~~~~~~~~~~~~~~~~#
