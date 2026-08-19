@@ -8,6 +8,7 @@ library(officer)
 library(flextable)
 library(broom)
 
+
 source("analysis_functions.R")
 data<-read.csv("longitudinal_data_clean.csv")
 

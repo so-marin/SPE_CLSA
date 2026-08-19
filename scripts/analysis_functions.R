@@ -7,6 +7,8 @@ require(rstatix)
 require(car)
 require(emmeans)
 require(tidyr)
+require(flextable)
+require(officer)
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #### DATA CLEANING FUNCTIONS ####
