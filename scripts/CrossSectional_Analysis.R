@@ -193,7 +193,7 @@ q<-ggplot(emms_panel, aes(x=Outcome, y=emmean, color=scd_status, group=scd_statu
     color="Group"
   ) +
   scale_x_discrete(expand=c(0, 0.2))+
-  scale_y_continuous(limits=c(20,60),breaks=seq(20,60, by=10))+
+  scale_y_continuous(limits=c(20,55),breaks=seq(20,55, by=5))+
   scale_color_brewer(palette="Dark2")+
   theme_bw()+
   theme(
