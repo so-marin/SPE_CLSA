@@ -6,8 +6,8 @@ library(modi)
 library(psych)
 library(table1)
 
-source("analysis_functions.R")
-data <- read_csv("scd_spe_merged.csv")
+source("data/analysis_functions.R")
+data <- read_csv("data/scd_spe_merged.csv")
 
 data1<-data%>%
   filter(
@@ -229,7 +229,7 @@ summary(model)
 exp(coef(model))
 exp(confint(model))
 
-capture.output(summary(missing_model), file = "logistic_regression_output_longitudinal.txt")
+capture.output(summary(missing_model), file = "results/logistic_regression_output_longitudinal.txt")
 
 
 ## exclude people with no RAVLT data ####
@@ -254,7 +254,7 @@ plot_outcomes<-c("COG_REYII_SCORE_COF1", "COG_REYI_SCORE_COF1",
                  "DEP_CESD10_COF1","DEP_CESD10_COF2")
 
 # run function to get pdf with plots
-data_visualization_pdf(data4,plot_outcomes,"scd_status","longitudinal_plots.pdf")
+data_visualization_pdf(data4,plot_outcomes,"scd_status","results/longitudinal_plots.pdf")
 
 #skew and kurtosis
 describe(data4[, plot_outcomes])
@@ -286,4 +286,4 @@ data6 <- data5[md_results$mahalanobis_distances < md_results$cutoff, ]
 data6<-impute_by_group(data6, "scd_status",c("DEP_CESD10_COF1","DEP_CESD10_COF2"))
 
 
-write.csv(data6,"longitudinal_data_clean.csv",row.names=FALSE)
+write.csv(data6,"data/longitudinal_data_clean.csv",row.names=FALSE)

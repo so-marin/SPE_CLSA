@@ -11,3 +11,4 @@
 *.docx
 .txt
 regression_diagnostics/
+data/
