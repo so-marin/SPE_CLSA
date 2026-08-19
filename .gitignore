@@ -10,5 +10,6 @@
 *.csv
 *.docx
 .txt
-regression_diagnostics/
 data/
+figures/
+results/
