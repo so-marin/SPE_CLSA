@@ -2,18 +2,13 @@ library(tidyverse)
 library(table1)
 library(car)
 library(effectsize)
-library(broom)
 library(rstatix)
-library(lmtest)
-library(flextable)
-library(officer)
-library(broom)
 library(emmeans)
 
 
 source("scripts/analysis_functions.R")
 
-data<-read.csv("data/data_clean.csv")
+data<-read.csv("data/cs_data_clean.csv")
 
 #~~~~~~~~~~~~~~~~~~~~#
 #### DEMOGRAPHICS ####
