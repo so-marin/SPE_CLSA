@@ -285,3 +285,5 @@ data6 <- data5[md_results$mahalanobis_distances < md_results$cutoff, ]
 # MEAN IMPUTATION OF CESD-10 VAR ####
 data6<-impute_by_group(data6, "scd_status",c("DEP_CESD10_COF1","DEP_CESD10_COF2"))
 
+
+write.csv(data6,"longitudinal_data_clean.csv",row.names=FALSE)
