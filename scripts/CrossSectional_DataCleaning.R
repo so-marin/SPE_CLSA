@@ -7,7 +7,7 @@ library(psych)
 
 source("analysis_functions.R")
 
-data<-read_csv("scd_spe_merged.csv")
+data<-read_csv("data/scd_spe_merged.csv")
 
 data1<-data%>%
   filter(
@@ -104,7 +104,7 @@ summary(missing_model)
 exp(coef(missing_model))
 exp(confint(missing_model))
 
-capture.output(summary(missing_model), file = "logistic_regression_output.txt")
+capture.output(summary(missing_model), file = "results/logistic_regression_output.txt")
 
 ##### exclude people with no RAVLT data ####
 data3<- data2 %>%
@@ -169,7 +169,7 @@ plot_outcomes<-c("COG_REYII_SCORE_COF1", "COG_REYI_SCORE_COF1",
                  "recency_ratio","DEP_CESD10_COF1")
 
 # run function to get pdf with plots
-data_visualization_pdf(data3,plot_outcomes,"scd_status","cross_sectional_plots.pdf")
+data_visualization_pdf(data3,plot_outcomes,"scd_status","results/cross_sectional_plots.pdf")
 
 
 #skew and kurtosis
@@ -203,5 +203,5 @@ data5 <- data4[md_results$mahalanobis_distances < md_results$cutoff, ]
 data6<-impute_by_group(data5, "scd_status","DEP_CESD10_COF1")
 
 # write out clean dataset ####
-write.csv(data6,"data_clean.csv",row.names=FALSE)
+write.csv(data6,"data/cs_data_clean.csv",row.names=FALSE)
 

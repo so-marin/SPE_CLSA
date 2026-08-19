@@ -2,18 +2,13 @@ library(tidyverse)
 library(table1)
 library(car)
 library(effectsize)
-library(broom)
 library(rstatix)
-library(lmtest)
-library(flextable)
-library(officer)
-library(broom)
 library(emmeans)
 
 
-source("analysis_functions.R")
+source("scripts/analysis_functions.R")
 
-data<-read.csv("data_clean.csv")
+data<-read.csv("data/cs_data_clean.csv")
 
 #~~~~~~~~~~~~~~~~~~~~#
 #### DEMOGRAPHICS ####
@@ -73,7 +68,7 @@ predictor_vars<-c("AGE_NMBR_COF1","sex","ED_UDR04_COM","DEP_CESD10_COF1",
                   "testing_lang")
 
 ##### RUN REGRESSION DIAGNOSTICS FUNCTION #####
-regression_diagnostics(data,outcomes,"scd_status",predictor_vars,"long_diagnostics.txt")
+regression_diagnostics(data,outcomes,"scd_status",predictor_vars,"results/long_diagnostics.txt")
 
 
 #~~~~~~~~~~~~~~~~~~~~#
@@ -133,7 +128,7 @@ results_final<-format_results(all_results)
 
 ##### CREATE WORD DOCUMENT WITH MODEL OUTPUTS #####
 doc<-create_results_doc(results_final,unstd_mod$r2)
-print(doc, target="cross_sectional_results.docx")
+print(doc, target="results/cross_sectional_results.docx")
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -159,7 +154,7 @@ ratio_results_final<-format_results(all_ratio_results)
 
 ##### CREATE WORD DOCUMENT WITH MODEL OUTPUTS #####
 ratio_doc<-create_results_doc(ratio_results_final,ratio_unstd_mod$r2)
-print(ratio_doc, target="ratio_results.docx")
+print(ratio_doc, target="results/ratio_results.docx")
 
 
 #~~~~~~~~~~~~~~~~~#
@@ -198,7 +193,7 @@ q<-ggplot(emms_panel, aes(x=Outcome, y=emmean, color=scd_status, group=scd_statu
     color="Group"
   ) +
   scale_x_discrete(expand=c(0, 0.2))+
-  scale_y_continuous(limits=c(20,60),breaks=seq(20,60, by=10))+
+  scale_y_continuous(limits=c(20,55),breaks=seq(20,55, by=5))+
   scale_color_brewer(palette="Dark2")+
   theme_bw()+
   theme(
@@ -220,5 +215,5 @@ q<-ggplot(emms_panel, aes(x=Outcome, y=emmean, color=scd_status, group=scd_statu
   )
 
 #will save in wd
-ggsave("CS_spe.png", plot=q, width=8, height=6, units="in", dpi=600)
+ggsave("figures/CS_spe.png", plot=q, width=8, height=6, units="in", dpi=600)
 
