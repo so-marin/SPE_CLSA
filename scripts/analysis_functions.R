@@ -1,3 +1,13 @@
+require(tidyverse)
+require(modi)
+require(ggpubr)
+require(broom)
+require(lmtest)
+require(rstatix)
+require(car)
+require(emmeans)
+require(tidyr)
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #### DATA CLEANING FUNCTIONS ####
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -23,9 +33,6 @@ replace_missing <- function(df,vars,codes) {
 #' "summary" returns logical value for outliers (outliers = TRUE)
 #'  
 check_multivariate_outliers <- function(data, vars, alpha=.001) {
-  
-  library(dplyr)
-  library(modi)
   
   # Subset data
   data_md <- data[, vars]
@@ -97,8 +104,6 @@ check_multivariate_outliers <- function(data, vars, alpha=.001) {
 
 impute_by_group <- function(data,group_var, vars) {
   
-  library(dplyr)
-  
   data %>%
     group_by(across(all_of(group_var))) %>%
     mutate(across(
@@ -121,9 +126,7 @@ impute_by_group <- function(data,group_var, vars) {
 #' @return writes pdf file containing all plots
 
 data_visualization_pdf<-function(data,plot_outcomes,group_var,pdf_file_name){
-  library(ggplot2)
-  library(ggpubr)
-  
+
   pdf(pdf_file_name)
   
   for (var in plot_outcomes){
@@ -166,9 +169,7 @@ data_visualization_pdf<-function(data,plot_outcomes,group_var,pdf_file_name){
 #' @return new data frame with observations containing outliers removed.
 
 remove_group_outliers <- function(data, group_var, vars, z_cutoff = 3) {
-  
-  library(dplyr)
-  
+
   data %>%
     group_by(across(all_of(group_var))) %>%
     filter(!if_any(all_of(vars),
@@ -211,13 +212,8 @@ remove_group_outliers <- function(data, group_var, vars, z_cutoff = 3) {
 regression_diagnostics<-function(data,outcome_vars,group_var,covariates,
                                  txt_file_name){
   
-  library(broom)
-  library(lmtest)
-  library(rstatix)
-  library(car)
-  
   all_txt<-character()
-  output_dir<-"regression_diagnostics"
+  output_dir<-"results/regression_diagnostics"
   
   if (!dir.exists(output_dir)){
     dir.create(output_dir)
@@ -307,7 +303,7 @@ regression_diagnostics<-function(data,outcome_vars,group_var,covariates,
 
 mem_diagnostics<-function(data, outcome_vars, group_var, covariates, id_var){
   
-  pdf("mixed_model_diagnostics.pdf")
+  pdf("results/mixed_model_diagnostics.pdf")
   
   for (outcome in outcome_vars){
     model_formula<-paste0(outcome,"~Time*",group_var,"+",covariates,"+(1|",id_var,")")
@@ -355,8 +351,6 @@ mem_diagnostics<-function(data, outcome_vars, group_var, covariates, id_var){
 #' estimated marginal means by group
 
 fit_unstd_model<-function(data,outcome_vars,group_var,covariates){
-  library(emmeans)
-  library(tidyr)
   
   results_unstd_list<-list()
   r2_list<-list()
